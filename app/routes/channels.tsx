@@ -1,4 +1,4 @@
-import { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 
 type LoaderData = { channels: Array<{ id: number; title: string }> };
@@ -15,7 +15,7 @@ export default function ChannelsRoute() {
   const { channels } = useLoaderData<LoaderData>();
 
   return channels.map((channel) => (
-    <p>
+    <p key={channel.id}>
       <Link to={`/channel/${channel.id}`}>{channel.title}</Link>
     </p>
   ));
