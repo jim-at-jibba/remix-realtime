@@ -1,22 +1,25 @@
 import type { LoaderFunction } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import { Link, Outlet, useLoaderData } from "@remix-run/react";
+import channelData from "~/data/channels.json";
 
 type LoaderData = { channels: Array<{ id: number; title: string }> };
 
 export const loader: LoaderFunction = () => {
   return {
-    channels: [
-      { id: 1, title: "really cool channels" },
-      { id: 2, title: "more really cool channel" },
-    ],
+    channels: channelData,
   };
 };
+
 export default function ChannelsRoute() {
   const { channels } = useLoaderData<LoaderData>();
-
-  return channels.map((channel) => (
-    <p key={channel.id}>
-      <Link to={`/channel/${channel.id}`}>{channel.title}</Link>
-    </p>
-  ));
+  return (
+    <div>
+      {channels.map((channel) => (
+        <p key={channel.id}>
+          <Link to={`/channels/${channel.id}`}>{channel.title}</Link>
+        </p>
+      ))}
+      <Outlet />
+    </div>
+  );
 }
