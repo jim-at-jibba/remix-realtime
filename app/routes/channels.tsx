@@ -1,12 +1,20 @@
 import type { LoaderFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData } from "@remix-run/react";
-import channelData from "~/data/channels.json";
+import supabase from "~/utils/supabase";
 
 type LoaderData = { channels: Array<{ id: number; title: string }> };
 
-export const loader: LoaderFunction = () => {
+export const loader: LoaderFunction = async () => {
+  const { data: channels, error } = await supabase
+    .from("channels")
+    .select("id, title");
+
+  if (error) {
+    console.log(error.message);
+  }
+
   return {
-    channels: channelData,
+    channels,
   };
 };
 
