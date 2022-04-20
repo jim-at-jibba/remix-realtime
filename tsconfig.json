@@ -9,6 +9,7 @@
     "resolveJsonModule": true,
     "target": "ES2019",
     "strict": true,
+    "typeRoots": ["src/types", "node_modules/@types"],
     "baseUrl": ".",
     "paths": {
       "~/*": ["./app/*"]
