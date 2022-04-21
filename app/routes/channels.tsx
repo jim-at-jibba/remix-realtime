@@ -20,6 +20,7 @@ export const loader: LoaderFunction = async () => {
 
 export default function ChannelsRoute() {
   const { channels } = useLoaderData<LoaderData>();
+  console.log(supabase.auth.user());
   return (
     <div className="h-screen flex">
       <div className="bg-gray-800 text-white w-40 p-8">
