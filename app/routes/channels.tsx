@@ -21,13 +21,18 @@ export const loader: LoaderFunction = async () => {
 export default function ChannelsRoute() {
   const { channels } = useLoaderData<LoaderData>();
   return (
-    <div>
-      {channels.map((channel) => (
-        <p key={channel.id}>
-          <Link to={`/channels/${channel.id}`}>{channel.title}</Link>
-        </p>
-      ))}
-      <Outlet />
+    <div className="h-screen flex">
+      <div className="bg-gray-800 text-white w-40 p-8">
+        {channels.map((channel) => (
+          <p key={channel.id}>
+            <span className="text-gray-400 mr-1">#</span>
+            <Link to={`/channels/${channel.id}`}>{channel.title}</Link>
+          </p>
+        ))}
+      </div>
+      <div className="flex-1 p-8 flex flex-col">
+        <Outlet />
+      </div>
     </div>
   );
 }
