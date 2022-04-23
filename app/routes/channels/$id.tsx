@@ -2,6 +2,7 @@ import type { LoaderFunction } from "@remix-run/node";
 import { useEffect, useState } from "react";
 import { Form, useLoaderData, useFetcher } from "@remix-run/react";
 import supabase from "~/utils/supabase";
+import withAuthRequired from "~/withAuthRequired";
 
 type LoaderData = {
   channel: {
@@ -12,13 +13,18 @@ type LoaderData = {
   };
 };
 
-export const loader: LoaderFunction = async ({ params: { id } }) => {
+export const loader: LoaderFunction = async ({ params: { id }, request }) => {
+  const { supabase, redirect } = await withAuthRequired({ request });
+  if (redirect) return redirect;
   const { data: channel, error } = await supabase
     .from("channels")
-    .select("id, title, description, messages(id, content)")
+    .select(
+      "id, title, description, messages(id, content, profiles(id, email))"
+    )
     .match({ id })
     .single();
 
+  console.log(channel);
   if (error) {
     console.log(error);
   }
@@ -28,12 +34,15 @@ export const loader: LoaderFunction = async ({ params: { id } }) => {
 };
 
 export const action = async ({ request }) => {
+  const { supabase, redirect } = await withAuthRequired({ request });
+  if (redirect) return redirect;
   const formData = await request.formData();
   const content = formData.get("content");
   const channel_id = formData.get("channelId");
+  console.log({ content, channel_id });
   const { data, error } = await supabase
     .from("messages")
-    .insert({ content, channel_id });
+    .insert({ content, channel_id: Number(channel_id) });
   if (error) {
     console.log(error);
   }

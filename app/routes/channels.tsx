@@ -1,10 +1,13 @@
 import type { LoaderFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData } from "@remix-run/react";
 import supabase from "~/utils/supabase";
+import withAuthRequired from "~/withAuthRequired";
 
 type LoaderData = { channels: Array<{ id: number; title: string }> };
 
-export const loader: LoaderFunction = async () => {
+export const loader: LoaderFunction = async ({ request }) => {
+  const { supabase, redirect } = await withAuthRequired({ request });
+  if (redirect) return redirect;
   const { data: channels, error } = await supabase
     .from("channels")
     .select("id, title");

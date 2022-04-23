@@ -3,7 +3,11 @@ import supabase from "~/utils/supabase";
 
 export default () => {
   useEffect(() => {
-    supabase.auth.signOut();
+    const logout = async () => {
+      await supabase.auth.signOut();
+    };
+
+    logout();
   }, []);
   return <p>Logging out</p>;
 };

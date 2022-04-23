@@ -6,8 +6,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useFetcher,
   useLoaderData,
 } from "@remix-run/react";
+import { useEffect } from "react";
+import supabase from "~/utils/supabase";
 import styles from "~/styles/app.css";
 
 export const meta: MetaFunction = () => ({
@@ -30,6 +33,33 @@ export const loader = () => {
 
 export default function App() {
   const { env } = useLoaderData();
+  const fetcher = useFetcher();
+
+  useEffect(() => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        // call auth/login
+        fetcher.submit(
+          {
+            accessToken: session.access_token,
+          },
+          {
+            method: "post",
+            action: "/auth/login",
+          }
+        );
+      }
+
+      if (event === "SIGNED_OUT") {
+        // call auth/logout
+        fetcher.submit(null, {
+          method: "post",
+          action: "/auth/logout",
+        });
+      }
+    });
+  }, []);
+
   return (
     <html lang="en">
       <head>
