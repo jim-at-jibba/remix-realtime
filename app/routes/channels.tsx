@@ -1,5 +1,5 @@
 import type { LoaderFunction } from "@remix-run/node";
-import { Link, Outlet, useLoaderData } from "@remix-run/react";
+import { Link, Outlet, useLoaderData, useLocation } from "@remix-run/react";
 import supabase from "~/utils/supabase";
 import withAuthRequired from "~/withAuthRequired";
 
@@ -23,7 +23,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function ChannelsRoute() {
   const { channels } = useLoaderData<LoaderData>();
-  console.log(supabase.auth.user());
+  const location = useLocation();
+  console.log(supabase.auth.user(), location);
   return (
     <div className="h-screen flex">
       <div className="bg-gray-800 text-white w-40 p-8">
@@ -35,6 +36,12 @@ export default function ChannelsRoute() {
         ))}
       </div>
       <div className="flex-1 p-8 flex flex-col">
+        {location.pathname === "/channels" ||
+        location.pathname === "/channels/" ? (
+          <div className="flex-1 flex items-center justify-center text-center">
+            Chose a channel
+          </div>
+        ) : null}
         <Outlet />
       </div>
     </div>

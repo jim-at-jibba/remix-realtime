@@ -10,9 +10,11 @@ export default () => {
     const email = formData.get("email");
     const password = formData.get("password");
 
-    const { data, error } = await supabase.auth.signIn({ email, password });
+    const { error } = await supabase.auth.signIn({ email, password });
 
-    console.log({ data, error });
+    if (error) {
+      console.log(error.message);
+    }
   };
   return (
     <div className="h-screen flex flex-col items-center justify-center bg-gray-800 text-white">

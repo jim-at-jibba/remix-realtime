@@ -1,6 +1,11 @@
 import type { LoaderFunction } from "@remix-run/node";
-import { useEffect, useState } from "react";
-import { Form, useLoaderData, useFetcher } from "@remix-run/react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Form,
+  useLoaderData,
+  useFetcher,
+  useTransition,
+} from "@remix-run/react";
 import supabase from "~/utils/supabase";
 import withAuthRequired from "~/withAuthRequired";
 
@@ -9,40 +14,46 @@ type LoaderData = {
     id: number;
     title: string;
     description: string;
-    messages: Array<{ id: string; content: string }>;
+    messages: Array<{
+      id: string;
+      content: string;
+      like: number;
+      profiles: { email: string; username: string };
+    }>;
   };
 };
 
 export const loader: LoaderFunction = async ({ params: { id }, request }) => {
-  const { supabase, redirect } = await withAuthRequired({ request });
+  const { supabase, redirect, user } = await withAuthRequired({ request });
   if (redirect) return redirect;
   const { data: channel, error } = await supabase
     .from("channels")
     .select(
-      "id, title, description, messages(id, content, profiles(id, email))"
+      "id, title, description, messages(id, content, likes, profiles(id, email, username))"
     )
     .match({ id })
+    .order("created_at", { foreignTable: "messages" })
     .single();
 
-  console.log(channel);
   if (error) {
     console.log(error);
   }
   return {
     channel,
+    user,
   };
 };
 
 export const action = async ({ request }) => {
-  const { supabase, redirect } = await withAuthRequired({ request });
+  const { supabase, redirect, user } = await withAuthRequired({ request });
   if (redirect) return redirect;
   const formData = await request.formData();
   const content = formData.get("content");
   const channel_id = formData.get("channelId");
-  console.log({ content, channel_id });
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("messages")
-    .insert({ content, channel_id: Number(channel_id) });
+    .insert({ content, channel_id: Number(channel_id), user_id: user?.id });
+
   if (error) {
     console.log(error);
   }
@@ -51,16 +62,28 @@ export const action = async ({ request }) => {
 };
 
 export default () => {
-  const { channel } = useLoaderData<LoaderData>();
+  const { channel, user } = useLoaderData<LoaderData>();
   const fetcher = useFetcher();
+  const transition = useTransition();
+  const formRef = useRef();
+  const messagesRef = useRef();
   const [messages, setMessages] = useState([...channel.messages]);
+  useEffect(() => {
+    // INFO: transition tells you the state of your form
+    if (transition.state !== "submitting") {
+      formRef.current?.reset();
+    }
+  }, [transition.state]);
 
   useEffect(() => {
-    console.log("In effect");
+    messagesRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages]);
+
+  useEffect(() => {
+    // This is our realtime
     supabase
       .from(`messages:channel_id=eq.${channel.id}`)
       .on("*", (payload) => {
-        console.log(payload);
         // INFO: Instead of messing around with merging arrays.
         // Remix gives use the ability to call loaders with fetchers
         // setMessages((current) => [...current, payload.new]);
@@ -83,6 +106,20 @@ export default () => {
     setMessages([...channel.messages]);
   }, [channel]);
 
+  const handleIncrementLikes = (id) => async () => {
+    const { error } = await supabase.rpc("increment_likes", {
+      message_id: id,
+    });
+
+    if (error) {
+      console.error(error);
+    }
+  };
+
+  // INFO: This is clientside only as it comes from LocalStorage.
+  // Get it from the loader
+  // console.log(supabase.auth.user(), user);
+
   // INFO: This is the wrong way to do it
   // const handleSubmit = async (e: any) => {
   //   e.preventDefault();
@@ -104,15 +141,33 @@ export default () => {
         {channel.description}
       </p>
       <div className="flex-1 flex flex-col p-2 overflow-auto">
-        <div className="mt-auto">
-          {messages.map((message) => (
-            <p key={message.id} className="p-2">
-              {message.content}
-            </p>
-          ))}
+        <div className="mt-auto" ref={messagesRef}>
+          {messages.length > 0 ? (
+            messages.map((message) => (
+              <p
+                key={message.id}
+                className={`p-2 ${
+                  user.id === message.profiles.id ? "text-right" : ""
+                }`}
+              >
+                {message.content}
+                <span className="block text-xs text-gray-500 px-2">
+                  {message.profiles.username ?? message.profiles.email}
+                </span>
+                <span className="block text-xs text-gray-500 px-2">
+                  {message.likes} likes{" "}
+                  <button onClick={handleIncrementLikes(message.id)}>
+                    like
+                  </button>
+                </span>
+              </p>
+            ))
+          ) : (
+            <p className="font-bold text-center">Be the first to message</p>
+          )}
         </div>
       </div>
-      <Form method="post" className="flex">
+      <Form method="post" className="flex" ref={formRef}>
         <input name="content" className="border border-gray-200 px-2 flex-1" />
         <input type="hidden" name="channelId" value={channel.id} />
         <button className="px-4 py-2 ml-4 bg-blue-200">Send!</button>
